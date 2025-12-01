@@ -67,7 +67,7 @@ def predict():
             "prediction": int(pred),
             "confidence": float(probs[pred]),
             "probabilities": [float(probs[0]), float(probs[1])],
-            "classes": ["empty", "full"]
+            "classes": ["Pepsi Zero", "Mountain Dew Original"]
         })
     except Exception as e:
         return jsonify({"error": str(e), "type": type(e).__name__}), 500
