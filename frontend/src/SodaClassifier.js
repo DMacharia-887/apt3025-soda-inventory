@@ -52,4 +52,3 @@ function SodaClassifier() {
 }
 
 export default SodaClassifier;
-npm
