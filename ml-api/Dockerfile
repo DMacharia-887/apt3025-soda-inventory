@@ -1,26 +1,20 @@
-FROM python:3.10-slim
+FROM python:3.10
 
-# Essential libs for Pillow/torchvision (no deprecated GL)
 RUN apt-get update && apt-get install -y \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    libjpeg62-turbo \
-    libpng16-16 \
-    libwebp7 \
+    libglib2.0-0 libsm6 libxext6 libxrender-dev libgomp1 \
+    libjpeg62-turbo libpng16-16 libwebp7 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip cache purge
+# Install torch first (separate layer)
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-COPY app.py .
-COPY soda_bottle_classifier_resnet18.pth .
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
 
 EXPOSE $PORT
 
