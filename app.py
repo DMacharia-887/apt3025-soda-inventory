@@ -10,7 +10,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)
+CORS(app)1
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = None
@@ -24,12 +24,14 @@ def health():
 def predict():
     global model, transform
     try:
-        # Lazy load model on first call
         if model is None:
             model = resnet18(weights=None)
             model.fc = nn.Linear(model.fc.in_features, 2)
             model_path = os.path.join(os.path.dirname(__file__), "soda_bottle_classifier_resnet18.pth")
-            model.load_state_dict(torch.load(model_path, map_location=device), strict=False)
+            
+            # Load with strict=False (ignores size mismatches)
+            checkpoint = torch.load(model_path, map_location=device)
+            model.load_state_dict(checkpoint, strict=False)
             model.to(device)
             model.eval()
             
