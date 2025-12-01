@@ -8,7 +8,6 @@ import io
 from PIL import Image
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import numpy as np
 
 app = Flask(__name__)
 CORS(app)
@@ -24,6 +23,43 @@ def health():
 @app.route('/predict', methods=['POST'])
 def predict():
     global model, transform
-    if model is None:
-        model = resnet18(weights=None)
-        model.fc
+    try:
+        # Lazy load model on first call
+        if model is None:
+            model = resnet18(weights=None)
+            model.fc = nn.Linear(model.fc.in_features, 2)
+            model_path = os.path.join(os.path.dirname(__file__), "soda_bottle_classifier_resnet18.pth")
+            model.load_state_dict(torch.load(model_path, map_location=device), strict=False)
+            model.to(device)
+            model.eval()
+            
+            transform = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+            ])
+        
+        # Decode base64 image
+        data = request.get_json()
+        img_data = base64.b64decode(data["image"])
+        img = Image.open(io.BytesIO(img_data)).convert("RGB")
+        img_t = transform(img).unsqueeze(0).to(device)
+        
+        # Predict
+        with torch.no_grad():
+            outputs = model(img_t)
+            probs = torch.nn.functional.softmax(outputs[0], dim=0)
+            pred = torch.argmax(probs).item()
+        
+        return jsonify({
+            "prediction": int(pred),
+            "confidence": float(probs[pred]),
+            "probabilities": [float(probs[0]), float(probs[1])],
+            "classes": ["empty", "full"]
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port, debug=False)
