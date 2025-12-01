@@ -17,8 +17,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = None
 transform = None
 
-def load_model():
+@app.route('/', methods=['GET'])
+def health():
+    return jsonify({"status": "Soda Bottle Classifier API ready", "model": "ResNet18"})
+
+@app.route('/predict', methods=['POST'])
+def predict():
     global model, transform
     if model is None:
-        model = resnet18(weights=None)  # No deprecation warning
+        model = resnet18(weights=None)
         model.fc
