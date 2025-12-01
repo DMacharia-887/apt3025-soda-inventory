@@ -10,7 +10,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)1
+CORS(app)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = None
@@ -28,8 +28,6 @@ def predict():
             model = resnet18(weights=None)
             model.fc = nn.Linear(model.fc.in_features, 2)
             model_path = os.path.join(os.path.dirname(__file__), "soda_bottle_classifier_resnet18.pth")
-            
-            # Load with strict=False (ignores size mismatches)
             checkpoint = torch.load(model_path, map_location=device)
             model.load_state_dict(checkpoint, strict=False)
             model.to(device)
@@ -41,13 +39,11 @@ def predict():
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
         
-        # Decode base64 image
         data = request.get_json()
         img_data = base64.b64decode(data["image"])
         img = Image.open(io.BytesIO(img_data)).convert("RGB")
         img_t = transform(img).unsqueeze(0).to(device)
         
-        # Predict
         with torch.no_grad():
             outputs = model(img_t)
             probs = torch.nn.functional.softmax(outputs[0], dim=0)
