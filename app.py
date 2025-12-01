@@ -17,8 +17,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = None
 transform = None
 
-def init_model():
+def load_model():
     global model, transform
     if model is None:
-        model = resnet18(weights=None)  # Fixes deprecation warning
+        model = resnet18(weights=None)  # No deprecation warning
         model.fc
